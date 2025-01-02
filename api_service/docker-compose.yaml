@@ -1,0 +1,100 @@
+version: '3.9'
+services:
+  server:
+    build: .
+    container_name: server
+    ports:
+      - "8000:8000"
+    env_file:
+      - env_vars/admin.env
+      - env_vars/database.env
+      - env_vars/django.env
+      - env_vars/celery.env
+      - env_vars/logging.env
+      - env_vars/ollama.env
+      - env_vars/models.env
+    volumes:
+      - ./src:/src
+      - ./logs/server:/logs/server
+      - ./uploads:/uploads
+      - ./data/chromadb:/data/chromadb
+      - ./data/models:/data/models
+    depends_on:
+      db:
+        condition: service_healthy
+  process_dataset_job:
+    build: .
+    command: ./runworker.sh -j process_dataset
+    container_name: process_dataset_job
+    env_file:
+      - env_vars/admin.env
+      - env_vars/database.env
+      - env_vars/celery.env
+      - env_vars/logging.env
+      - env_vars/ollama.env
+      - env_vars/models.env
+    volumes:
+      - ./src:/src
+      - ./logs/tasks:/logs/tasks
+      - ./uploads:/uploads
+      - ./data/chromadb:/data/chromadb
+      - ./data/models:/data/models
+    depends_on:
+      - redis
+      - server
+      - ollama
+  db:
+    image: postgres:16.2-alpine3.19
+    container_name: db-postgres
+    ports:
+      - "5433:5432"
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: chatbot
+      TZ: "Asia/Kolkata"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 3
+    logging:
+      driver: none
+  redis:
+    image: redis
+    container_name: redis
+    ports:
+      - "6379:6379"
+    logging:
+      driver: none
+  flower:
+    image: mher/flower:1.2.0
+    container_name: flower
+    user: 0:0
+    env_file:
+      - env_vars/celery.env
+      - env_vars/flower.env
+    ports:
+      - "5555:5555"
+    volumes:
+      - ./data/flower:/etc/db/
+    depends_on:
+      - redis
+      - server
+      - process_dataset_job
+    logging:
+      driver: none
+  ollama:
+    image: ollama/ollama:0.1.39
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./data/ollama:/root/.ollama
+      - ./scripts:/scripts
+    env_file:
+      - env_vars/ollama.env
+    container_name: ollama
+    entrypoint: ["/usr/bin/bash", "./scripts/ollama/ollama-init.sh"]

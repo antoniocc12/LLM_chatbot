@@ -1,0 +1,20 @@
+[
+{
+    "model": "oauth2_provider.application",
+    "pk": 1,
+    "fields": {
+        "client_id": "zMSG4Ieu8E0FZyctUh4uMjNrj41MpAkhzHDIheEK",
+        "user": 1,
+        "redirect_uris": "",
+        "post_logout_redirect_uris": "",
+        "client_type": "public",
+        "authorization_grant_type": "password",
+        "client_secret": "pbkdf2_sha256$600000$m2ljyNgBCDPhjOlkBbZ3Bk$oDG8HVtGyDgztUcak+mQSprIuLBCz8bKrqt6InTWY3w=",
+        "name": "JARVIS_APP",
+        "skip_authorization": false,
+        "created": "2024-05-08T21:42:53.270Z",
+        "updated": "2024-05-08T21:42:53.270Z",
+        "algorithm": ""
+    }
+}
+]
